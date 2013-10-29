@@ -1,5 +1,9 @@
 package com.example.monitor;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+import redis.clients.jedis.Jedis;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -21,18 +25,29 @@ public class NetworkListener extends BroadcastReceiver {
 				&& State.CONNECTED != wifiState
 				&& State.CONNECTED == mobileState) {
 			Network.network = 1;
-			System.out.println("connected###################################################");
-			// 手机网络连接成功
+			System.out.println("GPRS");
+//			Jedis jedis = new Jedis("192.168.103.18");
+//			jedis.auth("123456redis");
+//			jedis.rpush("network_change", "gprs |" + new Date().toLocaleString());
+
 		} else if (wifiState != null && mobileState != null
 				&& State.CONNECTED != wifiState
 				&& State.CONNECTED != mobileState) {
 			Network.network= 0;
-			System.out.println("not network ###################################################");
-			// 手机没有任何的网络
+			System.out.println("offline");
+//			Jedis jedis = new Jedis("192.168.103.18");
+//			jedis.auth("123456redis");
+//			jedis.rpush("network_change", "offline | " + new Date().toLocaleString());
+
 		} else if (wifiState != null && State.CONNECTED == wifiState) {
 			Network.network = 2; 
-			System.out.println("wifi ok ###################################################");
-			// 无线网络连接成功
+			System.out.println("wifi");
+			Jedis jedis = new Jedis("192.168.103.18");
+			jedis.auth("123456redis");
+			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-dd-MM HH:mm:ss");
+			
+			jedis.rpush("network_change", "wifi | " + sdf.format(new Date()));
+
 		}
 
 	}
