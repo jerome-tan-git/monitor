@@ -13,14 +13,14 @@ public class MyPhoneStateListener extends PhoneStateListener{
      public void onCallStateChanged(int state, String incomingNumber) {  
          switch (state) {  
          case TelephonyManager.CALL_STATE_IDLE:  
-             System.out.println("手机空闲起来了  ");  
+             System.out.println("Phone idel");  
              break;  
          case TelephonyManager.CALL_STATE_RINGING:
-        	 System.out.println("手机铃声响了，来电号码:"+incomingNumber);
+        	 System.out.println("Ringing:"+incomingNumber);
         	 this.parent.endCall();
              break;  
          case TelephonyManager.CALL_STATE_OFFHOOK:  
-        	 System.out.println("电话被挂起了 ");
+        	 System.out.println("off hook");
          default:  
              break;  
          }  

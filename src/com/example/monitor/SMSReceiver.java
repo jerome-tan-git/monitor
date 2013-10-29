@@ -3,6 +3,8 @@ package com.example.monitor;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import redis.clients.jedis.Jedis;
+
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -44,10 +46,12 @@ public class SMSReceiver extends BroadcastReceiver {
 				for (SmsMessage mge : mges) {
 					String msgFrom = mge.getDisplayOriginatingAddress();
 					String msgContent = mge.getMessageBody();
-					
-//					Date date = new Date(mge.getTimestampMillis());
-//					SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-//					sendtime = format.format(date);// 获取短信发送时间；
+					String json = "{message:'"+msgContent+"',phoneNumber:'"+msgFrom+"'}";
+					System.out.println("Rec: " + json);
+					Jedis jedis = new Jedis("192.168.103.18");
+					jedis.auth("123456redis");
+					jedis.rpush("receiveQueue", json);
+					jedis.incr("tmpphone:" + msgFrom);
 				}
 				System.out.println("receive message:" + sb);
 

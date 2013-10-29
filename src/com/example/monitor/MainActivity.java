@@ -1,6 +1,7 @@
 package com.example.monitor;
 
 import java.lang.reflect.Method;
+import java.util.List;
 
 import com.android.internal.telephony.ITelephony;
 
@@ -14,6 +15,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.telephony.PhoneStateListener;
+import android.telephony.SmsManager;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.Menu;
@@ -48,14 +50,29 @@ public class MainActivity extends Activity {
 		 button01.setOnClickListener(new Button.OnClickListener(){ 
 	            @Override
 	            public void onClick(View v) {
-	            	 Jedis jedis = new Jedis("192.168.103.18");
-	        		 jedis.auth("123456redis");
+	            	String msg = "1111111111111111111111111111";
+					
+					if (msg == null) {
+						msg = "[empty message]";
+					}
+					SmsManager sms = SmsManager
+							.getDefault();
+					List<String> texts = sms
+							.divideMessage(msg);
+					for (String text : texts) {
+						System.out.println("send messag: " + "+8613671605961" + "  |  " + msg);
+						sms.sendTextMessage(
+								"+8613671605961", null,
+								text, null, null);
+					}
+//	            	 Jedis jedis = new Jedis("192.168.103.18");
+//	        		 jedis.auth("123456redis");
 	        		 //jedis.set("java", "http://java.androidwhy.com");
-	        		 String value = jedis.get("foo");
+	        		 //String value = jedis.get("foo");
 	        		 //System.out.println(value);
 	                // TODO Auto-generated method stub
 
-	                textView01.setText(value);
+	                //textView01.setText(value);
 	                //new MonitorProcess();
 	            }         
 
@@ -97,7 +114,7 @@ public class MainActivity extends Activity {
 	        });
 	}
 	 public void endCall() {  
-	        // 初始化iTelephony  
+	        // åˆ�å§‹åŒ–iTelephony  
 	        Class<TelephonyManager> c = TelephonyManager.class;  
 	        Method getITelephonyMethod = null;  
 	        try {  
