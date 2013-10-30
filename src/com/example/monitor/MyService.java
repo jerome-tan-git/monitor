@@ -10,6 +10,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Binder;
 import android.os.IBinder;
 import android.telephony.PhoneStateListener;
@@ -22,7 +23,7 @@ public class MyService extends Service{
 	private static final String TAG = "MyService";
 	private BroadcastReceiver networkBroadcast=new NetworkListener();
 	private TelephonyManager mTelephonyManager; 
-    //这里定义吧一个Binder类，用在onBind()有方法里，这样Activity那边可以获取到  
+    //è¿™é‡Œå®šä¹‰å�§ä¸€ä¸ªBinderç±»ï¼Œç”¨åœ¨onBind()æœ‰æ–¹æ³•é‡Œï¼Œè¿™æ ·Activityé‚£è¾¹å�¯ä»¥èŽ·å�–åˆ°  
     private MyBinder mBinder = new MyBinder();
     private MonitorProcess mp = new MonitorProcess(this);
     @Override  
@@ -38,6 +39,12 @@ public class MyService extends Service{
         super.onCreate();  
     }  
       
+    public int getNetworkStatus ()
+    {
+    	ConnectivityManager mConnectivityManager = (ConnectivityManager) this.getSystemService(Context.CONNECTIVITY_SERVICE); 
+        NetworkInfo mNetworkInfo = mConnectivityManager.getActiveNetworkInfo();
+        return mNetworkInfo.getType();
+    }
     @Override  
     public void onStart(Intent intent, int startId) {  
         Log.e(TAG, "start onStart~~~"); 
@@ -64,7 +71,7 @@ public class MyService extends Service{
         return super.onUnbind(intent);  
     }  
       
-    //这里我写了一个获取当前时间的函数，不过没有格式化就先这么着吧  
+    //è¿™é‡Œæˆ‘å†™äº†ä¸€ä¸ªèŽ·å�–å½“å‰�æ—¶é—´çš„å‡½æ•°ï¼Œä¸�è¿‡æ²¡æœ‰æ ¼å¼�åŒ–å°±å…ˆè¿™ä¹ˆç�€å�§  
     public String getSystemTime(){  
           
         Time t = new Time();  
@@ -79,7 +86,7 @@ public class MyService extends Service{
         }  
     }  
     public void endCall() {  
-        // 初始化iTelephony  
+        // åˆ�å§‹åŒ–iTelephony  
         Class<TelephonyManager> c = TelephonyManager.class;  
         Method getITelephonyMethod = null;  
         try {  

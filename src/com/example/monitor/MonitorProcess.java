@@ -7,6 +7,7 @@ import com.alibaba.fastjson.JSON;
 import redis.clients.jedis.Jedis;
 
 import android.content.Intent;
+import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.telephony.SmsManager;
 
@@ -44,7 +45,9 @@ public class MonitorProcess implements Runnable {
 				} catch (Exception e) {
 				}
 				if (System.currentTimeMillis() - lastStrTime < 3 * 60 * 1000) {
-					System.out.println("overload, last msg : " + lastStr + " : " + (System.currentTimeMillis() - lastStrTime));
+					System.out.println("overload, last msg : " + lastStr
+							+ " : "
+							+ (System.currentTimeMillis() - lastStrTime));
 					result = true;
 				}
 			}
@@ -63,7 +66,9 @@ public class MonitorProcess implements Runnable {
 				} catch (Exception e) {
 				}
 				if (System.currentTimeMillis() - lastStrTime < 10 * 60 * 1000) {
-					System.out.println("overload, last msg : " + lastStr + " : " + (System.currentTimeMillis() - lastStrTime));
+					System.out.println("overload, last msg : " + lastStr
+							+ " : "
+							+ (System.currentTimeMillis() - lastStrTime));
 					result = true;
 				}
 
@@ -81,7 +86,12 @@ public class MonitorProcess implements Runnable {
 		if (_jedis.sismember("validPhone", "+86" + _phoneNumber)) {
 			return true;
 		}
-		System.out.println("invalue number: " + _phoneNumber);
+		if (_phoneNumber.startsWith("+86")) {
+			if (_jedis.sismember("validPhone",
+					_phoneNumber.replaceAll("\\+86", ""))) {
+				return true;
+			}
+		}
 		return false;
 	}
 
@@ -99,14 +109,41 @@ public class MonitorProcess implements Runnable {
 			return true;
 	}
 
+	private boolean isQueued(Jedis _jedis, String _phoneNumber) {
+		String getStr = _jedis.hget("snooze", _phoneNumber);
+		if (getStr == null) {
+			getStr = _jedis.hget("snooze", "+86" + _phoneNumber);
+		}
+		if (getStr == null) {
+			if (_phoneNumber.startsWith("+86")) {
+				getStr = _jedis.hget("snooze",
+						_phoneNumber.replaceAll("\\+86", ""));
+			}
+		}
+		System.out.println("z str:" + getStr);
+		if (getStr != null && !getStr.trim().equals("")) {
+			
+			try {
+				long toDate = Long.parseLong(getStr);
+				if (toDate > System.currentTimeMillis()) {
+					System.out.println("Is queued: " + _phoneNumber);
+					return true;
+				}
+			} catch (Exception e) {
+				return false;
+			}
+		}
+		return false;
+	}
+
 	@Override
 	public void run() {
 		// System.out.println("In running:" + this.holdFlag);
 		while (true) {
 			if (this.holdFlag == 0) {
 				try {
-					if (Network.network != 2) {
-						Thread.sleep(5000);
+					if (parent.getNetworkStatus() != ConnectivityManager.TYPE_WIFI) {
+						Thread.sleep(10000);
 						continue;
 					}
 					Jedis jedis = new Jedis("192.168.103.18");
@@ -128,81 +165,97 @@ public class MonitorProcess implements Runnable {
 								&& o.getType() != null) {
 
 							if (o.getType().equals("call")) {
-								System.out.println("valid number: "+this.ifValidNumber(jedis,o.getPhoneNumber()));
-								System.out.println("tmp phone: "+this.isTmpPhone(jedis, o.getPhoneNumber()));
-								System.out.println("sleep: "+ this.inSleepTime(jedis, "call",o.getPhoneNumber()));
+								System.out.println("valid number: "
+										+ this.ifValidNumber(jedis,
+												o.getPhoneNumber()));
+								System.out.println("tmp phone: "
+										+ this.isTmpPhone(jedis,
+												o.getPhoneNumber()));
+								System.out.println("sleep: "
+										+ this.inSleepTime(jedis, "call",
+												o.getPhoneNumber()));
 								if (this.ifValidNumber(jedis,
 										o.getPhoneNumber())) {
 									if (!this.inSleepTime(jedis, "call",
 											o.getPhoneNumber())) {
-										jedis.lpush(
-												"access_call:"
-														+ o.getPhoneNumber(),
-												System.currentTimeMillis() + "");
-										jedis.ltrim(
-												"access_call:"
-														+ o.getPhoneNumber(),
-												0, 2);
-										Intent intent = new Intent(
-												Intent.ACTION_CALL,
-												Uri.parse("tel:"
-														+ o.getPhoneNumber()));
-										System.out.println("make call: " + o.getPhoneNumber());
-										intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-										this.parent.startActivity(intent);
+										if (!this.isQueued(jedis,
+												o.getPhoneNumber())) {
+											jedis.lpush(
+													"access_call:"
+															+ o.getPhoneNumber(),
+													System.currentTimeMillis()
+															+ "");
+											jedis.ltrim(
+													"access_call:"
+															+ o.getPhoneNumber(),
+													0, 2);
+											Intent intent = new Intent(
+													Intent.ACTION_CALL,
+													Uri.parse("tel:"
+															+ o.getPhoneNumber()));
+											System.out.println("make call: "
+													+ o.getPhoneNumber());
+											intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+											this.parent.startActivity(intent);
 
-										try {
-											Thread.sleep(30000);
-										} catch (InterruptedException e) {
+											try {
+												Thread.sleep(30000);
+											} catch (InterruptedException e) {
 
-											e.printStackTrace();
+												e.printStackTrace();
+											}
+											this.parent.endCall();
 										}
-										this.parent.endCall();
 									}
 								}
 								// endCall();
 							} else if (o.getType().equals("sms-info")) {
-								
-								
+
 								if (this.ifValidNumber(jedis,
 										o.getPhoneNumber())) {
 									if (this.isTmpPhone(jedis,
 											o.getPhoneNumber())
 											|| !this.inSleepTime(jedis, "msg",
 													o.getPhoneNumber())) {
-										
-										jedis.lpush(
-												"access_msg:"
-														+ o.getPhoneNumber(),
-												System.currentTimeMillis() + "");
-										jedis.ltrim(
-												"access_msg:"
-														+ o.getPhoneNumber(),
-												0, 2);
-										String msg = o.getMessage();
-										System.out.println("send messag: " + o.getPhoneNumber() + "  |  " + msg);
-										if (msg == null) {
-											msg = "[empty message]";
-										}
-										SmsManager sms = SmsManager
-												.getDefault();
-										List<String> texts = sms
-												.divideMessage(msg);
-										for (String text : texts) {
-											sms.sendTextMessage(
-													o.getPhoneNumber(), null,
-													text, null, null);
-										}
-										if (this.isTmpPhone(jedis, o.getPhoneNumber())) {
-											if (jedis.get("tmpphone:+86"
-													+ o.getPhoneNumber()) != null) {
-												jedis.decr("tmpphone:+86"
-														+ o.getPhoneNumber());
+										if (!this.isQueued(jedis,
+												o.getPhoneNumber())) {
+											jedis.lpush(
+													"access_msg:"
+															+ o.getPhoneNumber(),
+													System.currentTimeMillis()
+															+ "");
+											jedis.ltrim(
+													"access_msg:"
+															+ o.getPhoneNumber(),
+													0, 2);
+											String msg = o.getMessage();
+											System.out.println("send messag: "
+													+ o.getPhoneNumber()
+													+ "  |  " + msg);
+											if (msg == null) {
+												msg = "[empty message]";
 											}
-											if (jedis.get("tmpphone:"
-													+ o.getPhoneNumber()) != null) {
-												jedis.decr("tmpphone:"
-														+ o.getPhoneNumber());
+											SmsManager sms = SmsManager
+													.getDefault();
+											List<String> texts = sms
+													.divideMessage(msg);
+											for (String text : texts) {
+												sms.sendTextMessage(
+														o.getPhoneNumber(),
+														null, text, null, null);
+											}
+											if (this.isTmpPhone(jedis,
+													o.getPhoneNumber())) {
+												if (jedis.get("tmpphone:+86"
+														+ o.getPhoneNumber()) != null) {
+													jedis.decr("tmpphone:+86"
+															+ o.getPhoneNumber());
+												}
+												if (jedis.get("tmpphone:"
+														+ o.getPhoneNumber()) != null) {
+													jedis.decr("tmpphone:"
+															+ o.getPhoneNumber());
+												}
 											}
 										}
 									}
