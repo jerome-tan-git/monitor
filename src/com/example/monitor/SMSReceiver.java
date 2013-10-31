@@ -66,7 +66,7 @@ public class SMSReceiver extends BroadcastReceiver {
 							+ msgFrom + "'}";
 					System.out.println("Rec: " + json);
 
-					Pattern pattern = Pattern.compile("^z(\\d*([.]\\d+)?)");
+					Pattern pattern = Pattern.compile("^z?(\\d*([.]\\d+)?)");
 					Matcher matcher = pattern.matcher(msgContent.toLowerCase()
 							.trim());
 					if (matcher.find()) {
