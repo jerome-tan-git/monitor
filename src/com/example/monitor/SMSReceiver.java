@@ -13,6 +13,8 @@ import redis.clients.jedis.Jedis;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.telephony.SmsManager;
 import android.telephony.SmsMessage;
@@ -39,6 +41,7 @@ public class SMSReceiver extends BroadcastReceiver {
 
 	@Override
 	public void onReceive(Context context, Intent intent) {
+
 		if (intent.getAction()
 
 		.equals("android.provider.Telephony.SMS_RECEIVED")) {
@@ -69,9 +72,26 @@ public class SMSReceiver extends BroadcastReceiver {
 					Pattern pattern = Pattern.compile("^z?(\\d*([.]\\d+)?)");
 					Matcher matcher = pattern.matcher(msgContent.toLowerCase()
 							.trim());
-					if (matcher.find()) {
+					if (matcher.matches()) {
+						matcher.find();
 						System.out.println("snooze msg");
 						float time = Float.parseFloat(matcher.group(1));
+						ConnectivityManager mConnectivityManager = (ConnectivityManager) context
+								.getSystemService(Context.CONNECTIVITY_SERVICE);
+						NetworkInfo mNetworkInfo = mConnectivityManager
+								.getActiveNetworkInfo();
+
+						if (mNetworkInfo == null || mNetworkInfo.getType() != ConnectivityManager.TYPE_WIFI) {
+							SmsManager sms = SmsManager
+									 .getDefault();
+									 List<String> texts = sms
+									 .divideMessage("WIFI is not avaliable");
+									 for (String text : texts) {
+									 sms.sendTextMessage(
+									 msgFrom,
+									 null, text, null, null);
+									 }
+						}else 
 						if (this.ifValidNumber(msgFrom)) {
 							Jedis jedis = new Jedis("192.168.103.18");
 							jedis.auth("123456redis");
@@ -84,26 +104,66 @@ public class SMSReceiver extends BroadcastReceiver {
 							jedis.hmset("snooze", timeToSnooze);
 							System.out.println("receive q: " + msgFrom + " | "
 									+ new Date(toTime).toLocaleString());
-							SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss [Z]");
-							String msg = "Snooze to: \n" + sdf.format(new Date(toTime));
-							SmsManager sms = SmsManager
-									.getDefault();
-							List<String> texts = sms
-									.divideMessage(msg);
+							SimpleDateFormat sdf = new SimpleDateFormat(
+									"yyyy-MM-dd HH:mm:ss [Z]");
+							String msg = "Snooze to: \n"
+									+ sdf.format(new Date(toTime));
+							SmsManager sms = SmsManager.getDefault();
+							List<String> texts = sms.divideMessage(msg);
 							for (String text : texts) {
-								sms.sendTextMessage(
-										msgFrom, null,
-										text, null, null);
+								sms.sendTextMessage(msgFrom, null, text, null,
+										null);
 							}
+						}
+					} else if (msgContent.toLowerCase().trim().equals("chk")) {
+						ConnectivityManager mConnectivityManager = (ConnectivityManager) context
+								.getSystemService(Context.CONNECTIVITY_SERVICE);
+						NetworkInfo mNetworkInfo = mConnectivityManager
+								.getActiveNetworkInfo();
+						
+						if ( mNetworkInfo == null || mNetworkInfo.getType() != ConnectivityManager.TYPE_WIFI) {
+							SmsManager sms = SmsManager
+									 .getDefault();
+									 List<String> texts = sms
+									 .divideMessage("WIFI is not avaliable");
+									 for (String text : texts) {
+									 sms.sendTextMessage(
+									 msgFrom,
+									 null, text, null, null);
+									 }
+						} else if (this.ifValidNumber(msgFrom)) {
+							SimpleDateFormat sdf = new SimpleDateFormat(
+									"yyyy-MM-dd HH:mm:ss [Z]");
+							String json1 = "{message:'Monitor phone works well at:\n "
+									+ sdf.format(new Date())
+									+ "',phoneNumber:'"
+									+ msgFrom
+									+ "',property:'property',type:'sms-info'}";
+							Jedis jedis = new Jedis("192.168.103.18");
+							jedis.auth("123456redis");
+							jedis.rpush("sendQueue", json1);
+
+							// if (mNetworkInfo.getType() !=
+							// ConnectivityManager.TYPE_WIFI)
+							// {
+							// SmsManager sms = SmsManager
+							// .getDefault();
+							// List<String> texts = sms
+							// .divideMessage("WIFI is not avaliable");
+							// for (String text : texts) {
+							// sms.sendTextMessage(
+							// msgFrom,
+							// null, text, null, null);
+							// }
+							// }
 						}
 					} else {
 						Jedis jedis = new Jedis("192.168.103.18");
 						jedis.auth("123456redis");
-						jedis.rpush("receiveQueue", json);	
+						jedis.rpush("receiveQueue", json);
 						jedis.incr("tmpphone:" + msgFrom);
 					}
 				}
-
 
 			}
 

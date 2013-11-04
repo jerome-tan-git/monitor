@@ -10,7 +10,6 @@ public class BootCompletedReceiver extends BroadcastReceiver{
 	public void onReceive(Context context, Intent intent) {
 		if (intent.getAction().equals(Intent.ACTION_BOOT_COMPLETED)) 
 	    { 
-		  System.out.println("On receive...................................................");
 	      Intent newIntent = new Intent(context, MyService.class); 
 //	      newIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);   
 	      context.startService(newIntent);       
