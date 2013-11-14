@@ -12,7 +12,7 @@ public class BootCompletedReceiver extends BroadcastReceiver{
 	    { 
 	      Intent newIntent = new Intent(context, MyService.class); 
 //	      newIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);   
-	      context.startService(newIntent);       
+	      context.startService(newIntent);        
 	    } 
 		
 	}
