@@ -11,6 +11,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.wifi.WifiManager;
 import android.os.Binder;
 import android.os.IBinder;
 import android.telephony.PhoneStateListener;
@@ -38,11 +39,30 @@ public class MyService extends Service{
         Log.e(TAG, "start onCreate~~~");  
         super.onCreate();  
     }  
-      
+    public void getWIFI()
+    {
+    	WifiManager wifimanager = (WifiManager)this.getSystemService(Service.WIFI_SERVICE);
+    	System.out.println("Get wifi stats: " + wifimanager.getWifiState());
+    }
+    public void restartWIFI()
+    {
+    	WifiManager wifimanager = (WifiManager)this.getSystemService(Service.WIFI_SERVICE);
+    	wifimanager.setWifiEnabled(false);
+    	System.out.println("after set wif disable");
+    	try {
+			Thread.sleep(2000);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    	wifimanager.setWifiEnabled(true);
+    	System.out.println("after set wif enable");
+    }
     public int getNetworkStatus ()
     {
     	ConnectivityManager mConnectivityManager = (ConnectivityManager) this.getSystemService(Context.CONNECTIVITY_SERVICE); 
         NetworkInfo mNetworkInfo = mConnectivityManager.getActiveNetworkInfo();
+        if (mNetworkInfo == null) return -1;
         return mNetworkInfo.getType();
     }
     @Override  

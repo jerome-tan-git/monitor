@@ -143,14 +143,16 @@ public class MonitorProcess implements Runnable {
 			if (this.holdFlag == 0) {
 				try {
 					if (parent.getNetworkStatus() != ConnectivityManager.TYPE_WIFI) {
-						Thread.sleep(10000);
+						
+						parent.restartWIFI();
+						Thread.sleep(50000);
 						continue;
 					}
 					Jedis jedis = new Jedis("192.168.103.18");
 					jedis.auth("123456redis");
 					String value = jedis.lpop("sendQueue");
 					System.out.println("read from to send");
-
+					
 					if (value == null) {
 						try {
 							Thread.sleep(1000);
