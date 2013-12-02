@@ -26,7 +26,7 @@ public class MyService extends Service{
 	private TelephonyManager mTelephonyManager; 
     //è¿™é‡Œå®šä¹‰å�§ä¸€ä¸ªBinderç±»ï¼Œç”¨åœ¨onBind()æœ‰æ–¹æ³•é‡Œï¼Œè¿™æ ·Activityé‚£è¾¹å�¯ä»¥èŽ·å�–åˆ°  
     private MyBinder mBinder = new MyBinder();
-    private MonitorProcess mp = new MonitorProcess(this);
+//    private MonitorProcess mp = new MonitorProcess(this);
     @Override  
     public IBinder onBind(Intent intent) {  
         Log.e(TAG, "start IBinder~~~");  
@@ -70,16 +70,20 @@ public class MyService extends Service{
         Log.e(TAG, "start onStart~~~"); 
         IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
         this.registerReceiver(networkBroadcast, filter);
-        mp.setHoldFlag(0);
-        Thread t = new Thread(mp);
+        super.onStart(intent, startId);
+        StartJobThread sjt = new StartJobThread(this);
+        Thread t = new Thread(sjt);
         t.start();
-        super.onStart(intent, startId);   
-    }  
+//        while(true)
+//        {
+        	
+        }
+//    }  
       
     @Override  
     public void onDestroy() {  
         Log.e(TAG, "start onDestroy~~~");  
-        mp.setHoldFlag(1);
+//        mp.setHoldFlag(1);
         this.unregisterReceiver(networkBroadcast);  
         super.onDestroy();  
     }  
